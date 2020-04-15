@@ -1,0 +1,19 @@
+#!/bin/csh
+
+foreach SUBJECT (6007 6010 6011 6012 6014 6015 6055) 
+
+setenv SUBJECTS_DIR /gpfs23/scratch/begnocjp/caare_tbss/TAYLOR_CAARE_TBSS
+
+echo $SUBJECT
+
+setenv HARDI_folder $SUBJECTS_DIR/$SUBJECT/$SUBJECT"a"/701-x-WIP_HARDI_60_2_5iso-x-WIP_HARDI_60_2_5iso/NIFTI/
+
+cd $HARDI_folder
+
+mv dtifit_new_test_FA.nii.gz CON_{$SUBJECT}_dtifit_new_test_FA.nii.gz
+
+scp ./CON_{$SUBJECT}_dtifit_new_test_FA.nii.gz  /gpfs23/scratch/begnocjp/caare_tbss/TAYLOR_CAARE_TBSS/mytbss
+
+end
+
+
