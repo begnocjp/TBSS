@@ -1,0 +1,19 @@
+#steps TBSS
+#step one run preproc step to erode FA images slightly and zero the end slices, the script will #move all processed FA images into a new sub directory call FA where the registreation steps will #take place, and will also create a sub directory where all original images will be placed for #posterity. Finally the script runs slicesdir, which creats an overview webpage conraining a #static view of the inputs images for review 
+
+tbss_1_preproc *.nii.gz
+
+#step 2 tbss_2_reg run the non-linear registration, aligning all FA images to a 1x1x1 standard #space, the target image is then affine-aligned into MNI152 space and every image is then aligned #into MNI space by combining the nonlinear transform to the target FA image with the affine #transrofrm from that target to MNI152 space. For study specific FA alignment, use the -n flag to #identify the most repesentative FA image as the initial target image. (you can pick your own #using -t option, -T option is for FSL recommened general target image)
+
+cd FA
+tbss_2_reg -n
+
+#step 3 this stepp applies the nonlinear transform found in the previouse step to all subjects to #bring them into standard space, if last step was run with -n option, use -S iotion to derivive mean FA from subjects in sample 
+
+tbss_3_postreg -S
+
+#step 4, view skeleton and check threshold, a good start is .2, a higher thresehold will extend skeleton and could be issure if there is too much cross subject variability 
+
+cd stats
+fslview all_FA -b 0,0.8 mean_FA_skeleton -b 0.2,0.8 -1 Green
+
