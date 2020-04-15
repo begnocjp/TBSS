@@ -1,0 +1,39 @@
+#!/bin/csh
+
+ml MATLAB/2017a 
+
+cd 
+
+in MATLAB
+
+addpath('/home/begnocjp/Downloads/fieldtrip-20200320')
+do not use "genpath" as specified in Alex script, will create errors
+
+ft_defaults (sets up functions for matlab to use)
+
+
+
+use 3 SD for articaft rejection
+
+QA for xnat - generate PDF for showing how many bad channels 
+
+
+do voltage map before/after CSD transform to show its working
+
+
+
+
+
+look into what happens when changing pre/post trial times as you did below
+%% Trial Definition and ICA 
+%%%changed pre and post trial times - patrick b.%%%%
+for name_i = length(wpms.names)   
+    pre_trial = .5;
+    post_trial = .5;
+    trialfunction = 'Incident_M'; 
+    file_ext = 'raw';
+    trdat = ccm_trial_definition(wpms,name_i,trialfunction,pre_trial,post_trial,file_ext);
+    clear post_trial pre_trial trialfunction
+    ccm_ICA(wpms,name_i,trdat);        
+end
+
