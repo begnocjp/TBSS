@@ -1,7 +1,7 @@
 #!/bin/csh
 #need know time to read out
 # need list with con/pat
-# do within volume slice correction if possible, for now waiting on benenters pipeline before prusuiing further
+# do within volume slice correction if possible, for now waiting on benenters pipeline before #pursuing further
 #FA first go to representative guy with nonlinear then go to MNI152 with affine 
 # is atlas in MNI152?
 # set thresehold lower than 0.2 for largeger skeleton (too loo to much corss0subject variability)
