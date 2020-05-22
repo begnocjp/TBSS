@@ -1,0 +1,58 @@
+#!/bin/csh
+
+ml GCC/8.2.0 FreeSurfer/6.0.0
+ml FreeSurfer/6.0.0
+
+
+
+
+
+#INPUTS:
+#dwmri.nii.gz (main image)
+#dwmri.bval (units of s/mm2)
+#dwmri.bvec (normalized unit vectors in the FSL format)
+#t1.nii.gz (used for Synb0-DISCO, Optional)
+#rpe.nii.gz (used for RPE correction, Optional)
+#rpe.bval (units of s/mm2)
+#rpe.bvec (normalized unit vectors in the FSL format)
+
+run_dtiQA.py: the following arguments are required: 
+in_dir out_dir pe_dir readout_time b0_threshold project
+subject session scans
+
+
+#cd to directory
+setenv SUBJECTS_DIR /scratch/begnocjp/caare_dtiQA7-dwmri_ONLY/
+setenv SUBJECT 3004
+
+
+cd $SUBJECTS_DIR/$SUBJECT
+
+/scratch/begnocjp/singularities/dtiQA_v7.0.2.simg /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/INPUTS/3004a/ /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/OUTPUTS/ j- 1 2000 CAARE_dwmri 3004 a dwmri.nii.gz dwmri.bval dwmri.bvec T1.nii.gz 
+
+
+singularity run -e \
+-B /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/INPUTS/3004a/:/INPUTS \
+-B /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/OUTPUTS/:/OUTPUTS \
+-B /data/h_taylor/Imaging/freesurfer_license.txt:/APPS/freesurfer/license.txt \
+/scratch/begnocjp/singularities/dtiQA_v7.0.2.simg j- 1 2000 CAARE_HARDI_TBSS 3004 a HARDI
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

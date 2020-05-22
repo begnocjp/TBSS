@@ -1,0 +1,3 @@
+# script to make dti tracts
+#first load freesufer
+module load GCC/5.4.0-2.26 CMake/3.7.1  OpenMPI/1.10.3 FreeSurfer/6.0.0  

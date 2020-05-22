@@ -1,19 +1,104 @@
 #steps TBSS
-#step one run preproc step to erode FA images slightly and zero the end slices, the script will #move all processed FA images into a new sub directory call FA where the registreation steps will #take place, and will also create a sub directory where all original images will be placed for #posterity. Finally the script runs slicesdir, which creats an overview webpage conraining a #static view of the inputs images for review 
+#needs these modules#
+module load GCC/5.4.0-2.26 OpenMPI/1.10.3 FSL/5.0.10
 
+#step one run preproc step to erode FA images slightly and zero the end slices, the script will #move all processed FA images into a new sub directory call FA where the registreation steps will #take place, and will also create a sub directory where all original images will be placed for #posterity. Finally the script runs slicesdir, which creats an overview webpage conraining a #static view of the inputs images for review 
+#generates image could be used for pdf in XN
 tbss_1_preproc *.nii.gz
 
 #step 2 tbss_2_reg run the non-linear registration, aligning all FA images to a 1x1x1 standard #space, the target image is then affine-aligned into MNI152 space and every image is then aligned #into MNI space by combining the nonlinear transform to the target FA image with the affine #transrofrm from that target to MNI152 space. For study specific FA alignment, use the -n flag to #identify the most repesentative FA image as the initial target image. (you can pick your own #using -t option, -T option is for FSL recommened general target image)
+#for subset of 20, 6156a_FA was identified as best target, use with -t 
 
 cd FA
-tbss_2_reg -n
+#for using all subs
+tbss_2_reg -n 
+#for using best target from subset (6156a is the best target out of 10 pat 10 con subset)
+tbss_2_reg -t /gpfs23/scratch/begnocjp/caare_tbss-HARDI_ONLY/6156a/6156a_FA.nii.gz
 
-#step 3 this stepp applies the nonlinear transform found in the previouse step to all subjects to #bring them into standard space, if last step was run with -n option, use -S iotion to derivive mean FA from subjects in sample 
+#step 3 this stepp applies the nonlinear transform found in the previouse step to all subjects to #bring them into standard space, if last step was run with -n option, use -S iotion to derivive #mean FA from subjects in sample 
+
+#check if images are in mni152 when using target image that is not in mni152
 
 tbss_3_postreg -S
 
-#step 4, view skeleton and check threshold, a good start is .2, a higher thresehold will extend skeleton and could be issure if there is too much cross subject variability 
+#step 4, view skeleton and check threshold, a good start is .2, a higher thresehold will extend #skeleton and could be issure if there is too much cross subject variability 
 
 cd stats
 fslview all_FA -b 0,0.8 mean_FA_skeleton -b 0.2,0.8 -1 Green
+
+
+#now threshold image at chosen value , e.g. 0.2
+tbss_4_prestats 0.2
+
+
+#now do stats where rows in matrix match alphabetical order of aligned FA images in the final 4D #file, to check use this command
+
+cd FA
+imglob *_FA.*
+
+#can use this to check how many subjects are in your 4d image
+fslnvols 
+
+#do stats with randomise, can use design_ttest2 is doing a simple two-group comparison (e.g. use as #below for 40 cons & 53 pats, add --T2 option for threshold free cluster enhancement
+# for the randomise tool the -n flag specifies the number of permutations, 500 is good for testing, 1000 is better, 5000 is for publication
+
+cd ../stats
+design_ttest2 design 41 53
+
+randomise -i all_FA_skeletonised -o tbss -m mean_FA_skeleton_mask -d design.mat -t design.con -n 500 --T2
+
+#for 100 permutations
+randomise -i all_FA_skeletonised -o tbss -m mean_FA_skeleton_mask -d design.mat -t design.con -n 1000 --T2
+
+#when looking at pcor stats values set min .95 max to 1 to view sig #voxelsn overlay stats on #standard MNI brain
+
+#can use script to thicken the thresholded stas image, filling into local #tracts seen in mean_FA
+tbss_fill tbss_tfce_corrp_tstat1 0.95 mean_FA tbss_fill_1
+tbss_fill tbss_tfce_corrp_tstat2 0.95 mean_FA tbss_fill_2
+tbss_fill tbss_tfce_corrp_tstat3 0.95 mean_FA tbss_fill_3
+tbss_fill tbss_tfce_corrp_tstat4 0.95 mean_FA tbss_fill_4
+
+
+
+fsleyes $FSLDIR/data/standard/MNI152_T1_1mm mean_FA_skeleton -1 Green -b .2,.8 tbss_tstat1 -1 Red-Yellow -b 3,6 tbss_tstat2 -1 Blue-Lightblue -b 3,6
+
+#check to see if you have anything within threshold
+
+fslstats tbss_tfce_corrp_tstat1.nii.gz -R
+
+#check to see if anything within lower bound threshold (will show number of voxels) 
+
+fslstats tbss_tfce_corrp_tstat1.nii.gz -l .95 -V
+
+
+
+#out out e.g.
+(base) [begnocjp@sideshowbob stats]$ fslstats tbss_tfce_corrp_tstat1.nii.gz -l .95 -V
+7497 7497.000000 
+(base) [begnocjp@sideshowbob stats]$ fslstats tbss_tfce_corrp_tstat4.nii.gz -l .95 -V
+59116 59116.000000 
+
+
+#make mask from atlas only include voxels that are simultaneously #included in #mean_FA_skeleton
+
+#label uncinate
+fslmaths jhu_label_L_Uncinate.nii.gz -mas mean_FA_skeleton_mask.nii.gz -bin con>pat_jhu_L_Uncinate_mask.nii.gz
+
+#prob uncinate
+fslmaths jhu-tracts_prob_Uncinate_fasciculus_L.nii.gz -mas mean_FA_skeleton_mask.nii.gz -bin con>pat_jhu_L_Uncinate_prob_mask.nii.gz
+
+fslmaths jhu-tracts_prob_Uncinate_fasciculus_R.nii.gz -mas mean_FA_skeleton_mask.nii.gz -bin meanFA_jhu_R_Uncinate_prob_mask.nii.gz
+
+#prob uncinate over con>pat tbss fill
+fslmaths jhu-tracts_prob_Uncinate_fasciculus_L.nii.gz -mas tbss_fill_1.nii.gz -bin convpat_wmeanFA_L_uncinate_prob_mask.nii.gz
+
+fslmaths jhu-tracts_prob_Uncinate_fasciculus_R.nii.gz -mas tbss_fill_1.nii.gz -bin convpat_wmeanFA_R_uncinate_prob_mask.nii.gz
+
+
+#get mean FA values for voxels within that mask for all subjects (makes #a list)
+fslmeants -i all_FA_skeletonised.nii.gz -m jhu_L_Uncinate_mask.nii.gz -o L_Uncinate_FA_values
+
+
+
+
 

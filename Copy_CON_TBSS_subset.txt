@@ -1,0 +1,18 @@
+#!/bin/csh
+
+setenv SUBJECTS_DIR /gpfs23/scratch/begnocjp/caare_tbss-HARDI_ONLY
+
+foreach SUBJECT (3015a 3021a 3043a 6004a 6007a 6011a 6016a 6026a 6031a 6036a 6046a 6072a 6074a 6091a 6102a 6123a 6132a 6147a 6156a 6169a) 
+
+echo $SUBJECT
+
+setenv HARDI_folder $SUBJECTS_DIR/$SUBJECT/
+
+cd $HARDI_folder
+
+scp ./{$SUBJECT}_FA.nii.gz ../mytbss_subset
+
+
+end
+
+

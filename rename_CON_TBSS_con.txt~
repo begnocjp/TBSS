@@ -1,0 +1,15 @@
+#!/bin/csh
+
+setenv orig_folder /gpfs23/scratch/begnocjp/caare_tbss-HARDI_ONLY/mytbss_6153a/origdata/
+
+cd $orig_folder
+
+foreach SUBJECT (3004a	3012a	3015a	3021a	3025a	3036a	3039a	3043a	3044a	3050a	3052a	3060a	3062a	3072a	3077a	3084a	3092a	3094a	6004a	6010a	6011a	6012a	6022a	6029a	6030a	6036a	6046a	6058a	6066a	6070a	6084a	6091a	6105a	6109a	6123a	6125a	6129a	6130a	6152a	6159a	6166a	6168a	6169a	6179a	6180a	6192a	6199a) 
+
+echo $SUBJECT
+
+mv {$SUBJECT}_FA.nii.gz con_{$SUBJECT}_FA.nii.gz
+
+end
+
+
