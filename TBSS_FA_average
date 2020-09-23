@@ -2,18 +2,24 @@
 #needs these modules#
 module load GCC/5.4.0-2.26 OpenMPI/1.10.3 FSL/5.0.10
 
-#step one run preproc step to erode FA images slightly and zero the end slices, the script will #move all processed FA images into a new sub directory call FA where the registreation steps will #take place, and will also create a sub directory where all original images will be placed for #posterity. Finally the script runs slicesdir, which creats an overview webpage conraining a #static view of the inputs images for review 
+#step one run preproc step to erode FA images slightly and zero the end slices, the script will #move all processed FA images into a new sub directory call FA where the registreation steps will #take place, and will also createsc a sub directory where all original images will be placed for #posterity. Finally the script runs slicesdir, which creats an overview webpage conraining a #static view of the inputs images for review 
 #generates image could be used for pdf in XN
 tbss_1_preproc *.nii.gz
 
 #step 2 tbss_2_reg run the non-linear registration, aligning all FA images to a 1x1x1 standard #space, the target image is then affine-aligned into MNI152 space and every image is then aligned #into MNI space by combining the nonlinear transform to the target FA image with the affine #transrofrm from that target to MNI152 space. For study specific FA alignment, use the -n flag to #identify the most repesentative FA image as the initial target image. (you can pick your own #using -t option, -T option is for FSL recommened general target image)
 #for subset of 20, 6156a_FA was identified as best target, use with -t 
 
-cd FA
+
 #for using all subs
 tbss_2_reg -n 
 #for using best target from subset (6156a is the best target out of 10 pat 10 con subset)
 tbss_2_reg -t /gpfs23/scratch/begnocjp/caare_tbss-HARDI_ONLY/6156a/6156a_FA.nii.gz
+# for dtiQA results, use fslmaths to replace NaN with zeroes in FA images, e.g. fslmaths PAT_{$SUBJECT}_FA.nii.gz -nan PAT_{$SUBJECT}_FA.nii.gz 
+tbss_2_reg -t /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/OUTPUTS/6156a/SCALARS/PAT_6156a_FA.nii.gz
+
+tbss_2_reg -t /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/OUTPUTS/6156a/SCALARS/PAT_6156a_FA.nii.gz
+
+
 
 #step 3 this stepp applies the nonlinear transform found in the previouse step to all subjects to #bring them into standard space, if last step was run with -n option, use -S iotion to derivive #mean FA from subjects in sample 
 
@@ -47,18 +53,23 @@ design_ttest2 design 41 53
 
 randomise -i all_FA_skeletonised -o tbss -m mean_FA_skeleton_mask -d design.mat -t design.con -n 500 --T2
 
-#for 100 permutations
+#for 1000 permutations
 randomise -i all_FA_skeletonised -o tbss -m mean_FA_skeleton_mask -d design.mat -t design.con -n 1000 --T2
+
+#for 1000 permutations with -D option 
+randomise -i all_FA_skeletonised -o tbss -m mean_FA_skeleton_mask -d design.mat -t design.con -n 1000 --T2
+
+randomise -i all_FA_skeletonised -o tbss -m mean_FA_skeleton_mask -d design.mat -t design.con -n 10000 --T2
 
 #when looking at pcor stats values set min .95 max to 1 to view sig #voxelsn overlay stats on #standard MNI brain
 
 #can use script to thicken the thresholded stas image, filling into local #tracts seen in mean_FA
-tbss_fill tbss_tfce_corrp_tstat1 0.95 mean_FA tbss_fill_1
-tbss_fill tbss_tfce_corrp_tstat2 0.95 mean_FA tbss_fill_2
-tbss_fill tbss_tfce_corrp_tstat3 0.95 mean_FA tbss_fill_3
-tbss_fill tbss_tfce_corrp_tstat4 0.95 mean_FA tbss_fill_4
+tbss_fill tbss_tfce_corrp_tstat1 0.95 mean_FA tbss_fill_1 
+tbss_fill tbss_tfce_corrp_tstat2 0.95 mean_FA tbss_fill_2 
+tbss_fill tbss_tfce_corrp_tstat3 0.95 mean_FA tbss_fill_3 
+tbss_fill tbss_tfce_corrp_tstat4 0.95 mean_FA tbss_fill_4 
 
-
+#in FSLeyes can only set lower bound threshold so to view significant voxels, e.g. at  p < .05, set min to .95 and max to 1
 
 fsleyes $FSLDIR/data/standard/MNI152_T1_1mm mean_FA_skeleton -1 Green -b .2,.8 tbss_tstat1 -1 Red-Yellow -b 3,6 tbss_tstat2 -1 Blue-Lightblue -b 3,6
 
@@ -78,6 +89,29 @@ fslstats tbss_tfce_corrp_tstat1.nii.gz -l .95 -V
 (base) [begnocjp@sideshowbob stats]$ fslstats tbss_tfce_corrp_tstat4.nii.gz -l .95 -V
 59116 59116.000000 
 
+#make mask showing significant parts of FA skeleton that lie on prob uncinate fas. 
+fslmaths jhu-tracts_prob_Uncinate_fasciculus_L.nii.gz -mas tbss_tfce_corrp_tstat1.nii.gz -bin sig_conVpat_jhu_L_Uncinate_prob_mask.nii.gz
+
+fslmaths jhu-tracts_prob_Uncinate_fasciculus_R.nii.gz -mas tbss_tfce_corrp_tstat1.nii.gz -bin sig_conVpat_jhu_R_Uncinate_prob_mask.nii.gz
+
+#get voxel count
+fslstats sig_conVpat_jhu_L_Uncinate_prob_mask.nii.gz -V
+EDDY ONLY - 3563.00
+dtiQA     - 3593.00
+fslstats sig_conVpat_jhu_R_Uncinate_prob_mask.nii.gz -V
+EDDY ONLY - 2026.00
+dtiQA     - 2251.00 
+
+#get avg FA values for Eddy
+fslmeants -i all_FA_skeletonised.nii.gz -m sig_conVpat_jhu_L_Uncinate_prob_mask.nii.gz -o sig_L_Uncinate_FA_values_Eddy.txt
+EDDY ONLY - 
+dtiQA     -     
+fslmeants -i all_FA_skeletonised.nii.gz -m sig_conVpat_jhu_R_Uncinate_prob_mask.nii.gz -o sig_R_Uncinate_FA_values_Eddy.txt
+EDDY ONLY -
+dtiQA     -    
+
+
+
 
 #make mask from atlas only include voxels that are simultaneously #included in #mean_FA_skeleton
 
@@ -85,7 +119,7 @@ fslstats tbss_tfce_corrp_tstat1.nii.gz -l .95 -V
 fslmaths jhu_label_L_Uncinate.nii.gz -mas mean_FA_skeleton_mask.nii.gz -bin con>pat_jhu_L_Uncinate_mask.nii.gz
 
 #prob uncinate
-fslmaths jhu-tracts_prob_Uncinate_fasciculus_L.nii.gz -mas mean_FA_skeleton_mask.nii.gz -bin con>pat_jhu_L_Uncinate_prob_mask.nii.gz
+fslmaths jhu-tracts_prob_Uncinate_fasciculus_L.nii.gz -mas mean_FA_skeleton_mask.nii.gz -bin meanFA_jhu_L_Uncinate_prob_mask.nii.gz
 
 fslmaths jhu-tracts_prob_Uncinate_fasciculus_R.nii.gz -mas mean_FA_skeleton_mask.nii.gz -bin meanFA_jhu_R_Uncinate_prob_mask.nii.gz
 
@@ -94,11 +128,173 @@ fslmaths jhu-tracts_prob_Uncinate_fasciculus_L.nii.gz -mas tbss_fill_1.nii.gz -b
 
 fslmaths jhu-tracts_prob_Uncinate_fasciculus_R.nii.gz -mas tbss_fill_1.nii.gz -bin convpat_wmeanFA_R_uncinate_prob_mask.nii.gz
 
-
 #get mean FA values for voxels within that mask for all subjects (makes #a list)
-fslmeants -i all_FA_skeletonised.nii.gz -m jhu_L_Uncinate_mask.nii.gz -o L_Uncinate_FA_values
+#do want values for entire mask or just within significant cluster?
+fslmeants -i all_FA_skeletonised.nii.gz -m jhu_L_Uncinate_mask.nii.gz -o L_Uncinate_FA_values.txt
+
+fslmeants -i all_FA_skeletonised.nii.gz -m jhu_R_Uncinate_mask.nii.gz -o R_Uncinate_FA_values.txt
 
 
+#calculate SD from 4d image
+e.g. fsmlaths 4d_output.nii.gz -Tstd std.nii.gz
+
+#mask all FA std skeleton with prob unc fasc
+fslmaths all_FA_std.nii.gz -mas jhu-tracts_prob_Uncinate_fasciculus_L.nii.gz std_all_FA_jhu_L_Uncinate_prob_mask.nii.gz
+
+fslmeants -i all_FA_std.nii.gz -m std_all_FA_jhu_L_Uncinate_prob_mask.nii.gz -o mean_std_all_FA_jhu_L_Uncinate_prob_mask.txt
+
+fslmaths all_FA_std.nii.gz -mas jhu-tracts_prob_Uncinate_fasciculus_R.nii.gz std_all_FA_jhu_R_Uncinate_prob_mask.nii.gz
+
+fslmeants -i all_FA_std.nii.gz -m std_all_FA_jhu_R_Uncinate_prob_mask.nii.gz -o mean_std_all_FA_jhu_R_Uncinate_prob_mask.txt
+
+#mask FA std skeleton with prob unc fasc
+
+fslmaths all_FA_skeletonised_std.nii.gz -mas jhu-tracts_prob_Uncinate_fasciculus_L.nii.gz std_skeleton_FA_jhu_L_Uncinate_prob_mask.nii.gz
+
+fslmeants -i all_FA_skeletonised_std.nii.gz -m std_skeleton_FA_jhu_L_Uncinate_prob_mask.nii.gz -o mean_std_skeleton_FA_jhu_L_Uncinate_prob_mask.txt
+
+fslmaths all_FA_skeletonised_std.nii.gz -mas jhu-tracts_prob_Uncinate_fasciculus_R.nii.gz std_skeleton_FA_jhu_R_Uncinate_prob_mask.nii.gz
+
+fslmeants -i all_FA_skeletonised_std.nii.gz -m std_skeleton_FA_jhu_R_Uncinate_prob_mask.nii.gz -o mean_std_skeleton_FA_jhu_R_Uncinate_prob_mask.txt
+
+fslmeants -i all_FA_skeletonised_std.nii.gz -m all_FA_skeletonised_std_mask.nii.gz -o mean_std_skeleton.txt
+
+fslmaths all_FA_std.nii.gz -mas all_FA_skeletonised_std.nii.gz all_FA_skeletonised_std_mask.nii.gz
+
+fslmeants -i mean_FA_skeleton.nii.gz -m all_FA_skeletonised_std_mask.nii.gz -o mean_FA_skeleton.txt
 
 
+fslmeants -i mean_FA_skeleton.nii.gz -m std_skeleton_FA_jhu_L_Uncinate_prob_mask.nii.gz -o mean_FA_skeleton_unc_f_L.txt
+
+fslmeants -i mean_FA_skeleton.nii.gz -m std_skeleton_FA_jhu_R_Uncinate_prob_mask.nii.gz -o mean_FA_skeleton_unc_f_R.txt
+
+
+fslmeants -i all_FA_std.nii.gz -m all_FA_std.nii.gz -o mean_std_allFA.txt
+
+fslmeants -i all_FA.nii.gz -m std_all_FA_jhu_L_Uncinate_prob_mask.nii.gz -o mean_all_FA_jhu_L_Uncinate_prob_mask.txt
+
+#make thresholded bin masks for FA and forcepts maj 
+fslmaths mean_FA_skeleton.nii.gz -thr .5 -bin FA_skeleton_thresh_mask.nii.gz
+
+fslmaths jhu-tracts_prob_Forceps\ major.nii.gz -thr 60 -bin jhu_prob_forceps_major_mask.nii.gz
+
+#make mask showing parts of FA skeleton that lie on prob forcepts major 
+fslmaths FA_skeleton_thresh_mask.nii.gz -mas jhu_prob_forceps_major_mask.nii.gz -bin FA_skeleton_forcepts_major_prob_mask.nii.gz
+
+fslmeants -i mean_FA_skeleton.nii.gz -m FA_skeleton_forcepts_major_prob_mask.nii.gz -o mean_FA_skeleton_forceps_major.txt
+
+
+fslmeants -i all_FA_skeletonised.nii.gz -m FA_skeleton_forcepts_major_prob_mask.nii.gz -o mean_all_FA_skeleton_forceps_major.txt
+
+fslmeants -i mean_FA_skeleton.nii.gz -m FA_skeleton_forcepts_major_prob_mask.nii.gz -o mean_FA_skeleton_forceps_major.txt
+
+more mean_FA_skeleton_forceps_major.txt
+
+fslmeants -i all_FA_skeletonised_std.nii.gz -m FA_skeleton_forcepts_major_prob_mask.nii.gz -o mean_std_skeleton_forcepts_major.txt
+
+fslmeants -i all_FA_skeletonised.nii.gz -m std_all_FA_jhu_L_Uncinate_prob_mask.nii.gz -o mean_skeleton_L_unc_fas.txt
+
+
+#get SD for areas of skeletong where there is 
+#sig difference between con v pat
+# list of masks to apply to all FA SD:
+#sig_conVpat_jhu_L_Uncinate_prob_mask.nii.gz
+#sig_conVpat_jhu_R_Uncinate_prob_mask.nii.gz
+#tbss_tfce_corrp_tstat1.nii.gz
+
+fslmaths all_FA_std.nii.gz -mas sig_conVpat_jhu_L_Uncinate_prob_mask.nii.gz std_all_FA_sig_L_Uncinate_prob_mask.nii.gz
+
+fslmeants -i all_FA_std.nii.gz -m sig_conVpat_jhu_L_Uncinate_prob_mask.nii.gz -o mean_std_sig_L_unc_fas.txt
+
+fslmaths all_FA_std.nii.gz -mas sig_conVpat_jhu_R_Uncinate_prob_mask.nii.gz std_all_FA_sig_R_Uncinate_prob_mask.nii.gz
+
+fslmeants -i all_FA_std.nii.gz -m sig_conVpat_jhu_R_Uncinate_prob_mask.nii.gz -o mean_std_sig_R_unc_fas.txt
+
+#get FAs for sig unc fas
+
+fslmeants -i mean_FA_skeleton.nii.gz -m sig_conVpat_jhu_L_Uncinate_prob_mask.nii.gz -o mean_FA_sig_L_unc_fas.txt
+
+fslmeants -i mean_FA_skeleton.nii.gz -m sig_conVpat_jhu_R_Uncinate_prob_mask.nii.gz -o mean_FA_sig_R_unc_fas.txt
+
+fslmeants -i all_FA_skeletonised_std.nii.gz -m tbss_tfce_corrp_tstat1.nii.gz -o mean_std_sig_corrp_tstat1.txt
+
+fslmeants -i mean_FA_skeleton.nii.gz -m tbss_tfce_corrp_tstat1.nii.gz -o mean_FA_sig_corrp_tstat1.txt
+
+fslmeants -i all_FA_skeletonised.nii.gz -m sig_conVpat_jhu_L_Uncinate_prob_mask.nii.gz -o mean_all_FA_sig_L_unc_fas.txt
+
+fslmeants -i all_FA_skeletonised.nii.gz -m sig_conVpat_jhu_R_Uncinate_prob_mask.nii.gz -o mean_all_FA_sig_R_unc_fas.txt
+
+#make masks diff images for comparison of movement 6070a
+
+fslroi new_eddy_corrected_images.nii.gz corrected_b0.nii.gz 60 61
+
+bet corrected_b0.nii.gz corrected_b0_brain -m -f 0.2
+
+fslroi new_eddy_corrected_images.nii.gz mov_vol_20 20 21
+
+bet mov_vol_20 mov_vol_20_brain -m -f 0.2
+
+fslmaths mov_vol_20_brain_mask.nii.gz -sub corrected_b0_brain_mask.nii.gz diffb0_mov_vol_20
+
+#######make masks diff images for comparison of movement 6156a (eddy)
+
+fslroi new_eddy_corrected_images.nii.gz corrected_b0.nii.gz 0 1
+
+bet corrected_b0.nii.gz corrected_b0_brain -m -f 0.2
+
+fslroi new_eddy_corrected_images.nii.gz mov_vol_29 29 30
+
+bet mov_vol_29 mov_vol_29_brain -m -f 0.2
+
+fslmaths corrected_b0_brain_mask.nii.gz -sub mov_vol_29_brain_mask.nii.gz diffb0_mov_vol_29
+
+#######make masks diff images for comparison of movement 6156a (dtiqa) (go to preprocessed dir)
+
+fslroi dwmri.nii.gz b0.nii.gz 0 1
+
+bet b0.nii.gz b0_brain -m -f 0.2
+
+fslroi dwmri.nii.gz mov_vol_29 29 30
+
+bet mov_vol_29 mov_vol_29_brain -m -f 0.2
+
+fslmaths b0_brain_mask.nii.gz -sub mov_vol_29_brain_mask.nii.gz diffb0_mov_vol_29
+
+fslmaths diffb0_mov_vol_29.nii.gz -sub eddy_diffb0_mov_vol_29 diff_diff
+
+#######make masks diff images for comparison of movement 6023a (eddy)
+
+fslroi new_eddy_corrected_images.nii.gz corrected_b0.nii.gz 60 61
+
+bet corrected_b0.nii.gz corrected_b0_brain -m -f 0.2
+
+fslroi new_eddy_corrected_images.nii.gz mov_vol_52 52 53
+
+bet mov_vol_52 mov_vol_52_brain -m -f 0.2
+
+fslmaths corrected_b0_brain_mask.nii.gz -sub mov_vol_52_brain_mask.nii.gz diffb0_mov_vol_52
+
+#######make masks diff images for comparison of movement 6023a (dtiqa) (go to preprocessed dir)
+
+fslroi dwmri.nii.gz b0.nii.gz 60 61
+
+bet b0.nii.gz b0_brain -m -f 0.2
+
+fslroi dwmri.nii.gz mov_vol_52 52 53
+
+bet mov_vol_52 mov_vol_52_brain -m -f 0.2
+
+fslmaths b0_brain_mask.nii.gz -sub mov_vol_52_brain_mask.nii.gz diffb0_mov_vol_52
+
+fslmaths diffb0_mov_vol_52.nii.gz -sub eddy_diffb0_mov_vol_52 diff_diff
+
+#make masks diff images for comparison of movement 6070a
+#make masks diff images for comparison of movement 6070a
+
+###difference between std eddy minus dtiqa
+fslmaths all_FA_std_eddy.nii.gz -sub all_FA_std.nii.gz diff_FA_std
+
+fslmaths mov_vol_29_brain_dtiqa.nii.gz -sub mov_vol_29_brain_dtiqa.nii.gz diff_dtiqa29-eddy29
+
+fslmaths mov_vol_29_brain_dtiqa.nii.gz -sub mov_vol_29_brain_dtiqa.nii.gz diff_eddy29-dtiqa29
 

@@ -1,0 +1,4 @@
+#deproject onto the space fo each nonlinearly registered subject in all_FA
+fslmaths tbss_tfce_corrp_tstat1 -thr 0.95 grot
+tbss_deproject grot 1
+fslview all_FA grot_to_all_FA -1 Red-Yellow

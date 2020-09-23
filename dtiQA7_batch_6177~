@@ -20,8 +20,6 @@ foreach SUBJECT (3004a 3072a  6014a  6031a  6055a  6075a  6104a  6124a  6138a  6
 
 echo starting dtiQA 4 $SUBJECT
 
-mkdir /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/OUTPUTS/$SUBJECT
-
 singularity run -e \
 -B /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/INPUTS/$SUBJECT/:/INPUTS \
 -B /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/OUTPUTS/$SUBJECT/:/OUTPUTS \

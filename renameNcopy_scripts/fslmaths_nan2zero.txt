@@ -1,0 +1,19 @@
+#!/bin/csh
+
+foreach SUBJECT (3004a 3072a  6014a  6031a  6055a  6075a  6104a  6124a  6138a  6159a  6192a 3015a  3077a  6015a  6032a  6057a  6077a  6105a  6125a  6139a  6161a  6193a 3021a  3084a  6016a  6036a  6058a  6080a  6109a  6126a  6140a  6166a  6195a 3036a  6001a  6020a  6037a  6059a  6084a  6110a  6129a  6144a  6168a  6196a 3039a  6004a  6022a  6038a  6061a  6087a  6111a  6130a 6147a  6169a  6199a  3043a  6007a  6023a  6040a  6066a  6090a  6113a  6132a  6149a  6177a 3052a  6010a  6026a  6046a  6070a  6091a  6114a  6133a  6151a  6179a 3060a  6011a  6029a  6052a  6072a  6092a  6122a  6134a  6152a  6180a 3062a  6012a  6030a  6053a  6074a  6102a  6123a  6136a  6156a  6190a) 
+
+setenv SUBJECTS_DIR /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/OUTPUTS/mytbss/
+
+echo $SUBJECT
+
+cd $SUBJECTS_DIR
+
+#fslmaths CON_{$SUBJECT}_FA.nii.gz -nan CON_{$SUBJECT}_FA.nii.gz
+
+fslmaths PAT_{$SUBJECT}_FA.nii.gz -nan PAT_{$SUBJECT}_FA.nii.gz
+
+echo $SUBJECT NaN replaced!
+
+end
+
+

@@ -1,0 +1,41 @@
+#!/bin/csh
+
+setenv SUBJECTS_DIR_denoise_only /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY_without_synb0/OUTPUTS/
+
+setenv SUBJECTS_DIR_synb0_only /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY_without_denoise/OUTPUTS/
+
+setenv SUBJECTS_DIR_bothdtiQA /scratch/begnocjp/caare_dtiQA7-HARDI_ONLY/OUTPUTS/
+
+setenv SUBJECTS_DIR_eddy_only /data/h_taylor/Imaging/CAARE_TBSS/caare_tbss-HARDI_ONLY/
+
+foreach SUBJECT (3015a) 
+
+echo $SUBJECT
+
+cd $SUBJECTS_DIR_denoise_only/$SUBJECT/EDDY
+
+cp eddy_results.eddy_movement_rms {$SUBJECT}_eddy_results.eddy_movement_rms.txt
+
+scp ./{$SUBJECT}_eddy_results.eddy_movement_rms.txt /scratch/begnocjp/compare_synb0_denoise/denoise_only/
+
+cd $SUBJECTS_DIR_synb0_only/$SUBJECT/EDDY
+
+cp eddy_results.eddy_movement_rms {$SUBJECT}_eddy_results.eddy_movement_rms.txt
+
+scp ./{$SUBJECT}_eddy_results.eddy_movement_rms.txt /scratch/begnocjp/compare_synb0_denoise/synB0_only/
+
+cd $SUBJECTS_DIR_bothdtiQA/$SUBJECT/EDDY
+
+cp eddy_results.eddy_movement_rms {$SUBJECT}_eddy_results.eddy_movement_rms.txt
+
+scp ./{$SUBJECT}_eddy_results.eddy_movement_rms.txt /scratch/begnocjp/compare_synb0_denoise/both_syn_and_denoise/
+
+cd $SUBJECTS_DIR_eddy_only/$SUBJECT
+
+cp new_eddy_corrected_images.eddy_movement_rms {$SUBJECT}_eddy_results.eddy_movement_rms.txt
+
+scp ./{$SUBJECT}_eddy_results.eddy_movement_rms.txt /scratch/begnocjp/compare_synb0_denoise/eddy_only/
+
+end
+
+

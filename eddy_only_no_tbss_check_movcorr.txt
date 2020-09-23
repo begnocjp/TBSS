@@ -37,43 +37,10 @@
 
 #step 1 preproc with eddy correct
 # already did this guy - 3004a  
-foreach SUBJECT (6003a	6005a	6009a	6013a	6024a	6034a	6041a	6043a	6044a	6064a	6076a	6085a	6093a	6094a	6096a	6100a	6103a	6106a	6108a	6119a	6120a	6128a	6137a	6142a	6148a	6157a	6163a	6167a	6171a	6172a	6174a	6181a	6187a	6189a	3012a	3025a	3044a	3050a	3094a) 
 
 
-setenv SUBJECTS_DIR /gpfs23/scratch/begnocjp/caare_tbss-DTI_5min_ONLY
+eddy --imain=/data/h_taylor/Imaging/CAARE_TBSS/caare_tbss-HARDI_ONLY/3004a/new_eddy_corrected_images.nii.gz --mask=/data/h_taylor/Imaging/CAARE_TBSS/caare_tbss-HARDI_ONLY/3004a/b0_brain_mask.nii.gz --index=/data/h_taylor/Imaging/CAARE_TBSS/caare_tbss-HARDI_ONLY/index.txt --acqp=/data/h_taylor/Imaging/CAARE_TBSS/caare_tbss-HARDI_ONLY/acqparams.txt --bvecs=/data/h_taylor/Imaging/CAARE_TBSS/caare_tbss-HARDI_ONLY/3004a/HARDI.bvec --bvals=/data/h_taylor/Imaging/CAARE_TBSS/caare_tbss-HARDI_ONLY/3004a/HARDI.bval --niter=8 --fwhm=10,6,4,2,0,0,0,0 --flm=quadratic --repol --out=double_eddy_corrected_images
 
-echo $SUBJECT
-
-setenv DTI_5min_scan $SUBJECTS_DIR/$SUBJECT/DTI_5min.nii.gz
-
-setenv bvecs $SUBJECTS_DIR/$SUBJECT/DTI_5min.bvec
-
-setenv bvals $SUBJECTS_DIR/$SUBJECT/DTI_5min.bval
- 
-cd $SUBJECTS_DIR/$SUBJECT/
-
-pwd
-
-fslroi $DTI_5min_scan b0 0 1
-
-bet b0 b0_brain -m -f 0.2
-
-setenv mask $SUBJECTS_DIR/$SUBJECT/b0_brain_mask.nii.gz
-
-#index file contains 34 "1"s denoting 34 volumes per .nii (different from HARDI which used 61)
-
-setenv acqp /gpfs23/scratch/begnocjp/caare_tbss-DTI_5min_ONLY/acqparams.txt
-setenv index /gpfs23/scratch/begnocjp/caare_tbss-DTI_5min_ONLY/index.txt
-
-#first sub 6003a failed to converge for eddy tool so changing fqhm from -0 to 10,0,0,0,0,0,0,0,0,0 #(see eddy #userguide for details, also changing niter from 5 to 10 to run additional iterations)
-
-eddy --imain=$DTI_5min_scan --mask=$mask --index=$index --acqp=$acqp --bvecs=$bvecs --bvals=$bvals --niter=8 --fwhm=10,6,4,2,0,0,0,0 --flm=quadratic --repol --out=new_eddy_corrected_images
-
-setenv new_eddy_corrected $SUBJECTS_DIR/$SUBJECT/new_eddy_corrected_images.nii.gz
-
-dtifit -k $new_eddy_corrected -o FA -m $mask -r $bvecs -b $bvals
-
-end
 
 
 
